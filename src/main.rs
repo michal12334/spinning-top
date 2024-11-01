@@ -1,11 +1,15 @@
+mod cube;
+mod cuber_drawer;
 mod infinite_grid_drawer;
 mod vertex;
 
 use chrono::Local;
+use cube::CubeBuilder;
+use cuber_drawer::CubeDrawer;
 use egui::ViewportId;
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
-use nalgebra::{Matrix4, Point3, Vector3, Vector4};
+use nalgebra::{Matrix4, Point3, UnitQuaternion, Vector3, Vector4};
 use winit::event::{self, ElementState, MouseButton};
 
 fn main() {
@@ -24,7 +28,7 @@ fn main() {
     let drawing_parameters = glium::DrawParameters {
         depth: glium::Depth {
             test: glium::draw_parameters::DepthTest::IfLess,
-            write: true,
+            write: false,
             ..Default::default()
         },
         backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
@@ -53,6 +57,15 @@ fn main() {
 
     let infinite_grid_drawer = InfiniteGridDrawer::new(&display);
 
+    let cube = CubeBuilder::default()
+        .size(1.0)
+        .base_rotation(UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0))
+        .rotation(UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0))
+        .build()
+        .unwrap();
+
+    let cube_drawer = CubeDrawer::new(&display);
+
     let mut previous_time = Local::now();
 
     let _ = event_loop.run(move |event, window_target| {
@@ -75,6 +88,7 @@ fn main() {
 
             target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
+            cube_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
             infinite_grid_drawer.draw(&mut target, &perspective, &view, &drawing_parameters);
 
             egui_glium.paint(&display, &mut target);
