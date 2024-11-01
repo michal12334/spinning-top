@@ -1,6 +1,10 @@
+mod infinite_grid_drawer;
+mod vertex;
+
 use chrono::Local;
 use egui::ViewportId;
 use glium::{Blend, Surface};
+use infinite_grid_drawer::InfiniteGridDrawer;
 use nalgebra::{Matrix4, Point3, Vector3, Vector4};
 use winit::event::{self, ElementState, MouseButton};
 
@@ -32,20 +36,22 @@ fn main() {
         width as f32 / height as f32,
         std::f32::consts::PI / 2.0,
         0.1,
-        1000.0,
+        100.0,
     );
 
     let mut mouse_position = (0.0, 0.0);
     let mut camera_direction = Vector3::new(0.0f32, 0.0, 1.0);
     let mut camera_angle = Vector3::new(0.0f32, 0.0, 0.0);
     let mut camera_up = Vector3::new(0.0f32, 1.0, 0.0);
-    let mut camera_distant = 20.0f32;
+    let mut camera_distant = 5.0f32;
     let mut view = Matrix4::look_at_rh(
         &Point3::from_slice((-camera_distant * camera_direction).as_slice()),
         &Point3::new(0.0, 0.0, 0.0),
         &camera_up,
     );
     let mut camera_move_button_pressed = false;
+
+    let infinite_grid_drawer = InfiniteGridDrawer::new(&display);
 
     let mut previous_time = Local::now();
 
@@ -69,6 +75,8 @@ fn main() {
 
             target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
+            infinite_grid_drawer.draw(&mut target, &perspective, &view, &drawing_parameters);
+
             egui_glium.paint(&display, &mut target);
 
             target.finish().unwrap();
@@ -88,7 +96,7 @@ fn main() {
                             new_size.width as f32 / new_size.height as f32,
                             std::f32::consts::PI / 2.0,
                             0.1,
-                            1000.0,
+                            100.0,
                         );
                     }
                     WindowEvent::CursorMoved { position, .. } => {
