@@ -125,9 +125,6 @@ impl InfiniteGridDrawer {
         view: &Matrix4<f32>,
         drawing_parameters: &DrawParameters,
     ) {
-        let mut drawing_parameters = drawing_parameters.clone();
-        drawing_parameters.polygon_mode = glium::draw_parameters::PolygonMode::Fill;
-
         target
             .draw(
                 &self.vertex_buffer,
