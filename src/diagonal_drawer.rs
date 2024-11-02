@@ -80,7 +80,7 @@ impl DiagonalDrawer {
                 &uniform! {
                     perspective: perspective.data.0,
                     view: view.data.0,
-                    model: cube.get_scale_matrix().data.0,
+                    model: cube.get_diagonal_model_matrix().data.0,
                 },
                 &drawing_parameters,
             )

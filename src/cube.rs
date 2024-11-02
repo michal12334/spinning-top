@@ -17,8 +17,8 @@ impl Cube {
             * Matrix4::new_scaling(self.size)
     }
 
-    pub fn get_scale_matrix(&self) -> Matrix4<f32> {
-        Matrix4::new_scaling(self.size)
+    pub fn get_diagonal_model_matrix(&self) -> Matrix4<f32> {
+        self.rotation.to_rotation_matrix().to_homogeneous() * Matrix4::new_scaling(self.size)
     }
 
     pub fn update_rotation(&mut self, rotation: UnitQuaternion<f32>) {
