@@ -5,8 +5,14 @@ mod infinite_grid_drawer;
 mod vertex;
 
 use core::f32;
+use std::{
+    i64,
+    sync::{Arc, Mutex},
+    thread::{self, sleep},
+    time::Duration,
+};
 
-use chrono::Local;
+use chrono::{Local, TimeDelta};
 use cube::CubeBuilder;
 use cuber_drawer::CubeDrawer;
 use diagonal_drawer::DiagonalDrawer;
@@ -61,18 +67,22 @@ fn main() {
 
     let infinite_grid_drawer = InfiniteGridDrawer::new(&display);
 
-    let cube = CubeBuilder::default()
+    let mut cube = CubeBuilder::default()
         .size(1.0)
         .base_rotation(
             UnitQuaternion::from_euler_angles(-(2.0 / 3.0f32).sqrt().acos(), 0.0, 0.0)
                 * UnitQuaternion::from_euler_angles(0.0, 0.0, f32::consts::PI / 4.0),
         )
-        .rotation(UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0))
+        .rotation(UnitQuaternion::identity())
         .build()
         .unwrap();
 
     let cube_drawer = CubeDrawer::new(&display);
     let diagonal_drawer = DiagonalDrawer::new(&display);
+
+    let shared_rotation = Arc::new(Mutex::<UnitQuaternion<f32>>::new(UnitQuaternion::identity()));
+    let shared_run = Arc::new(Mutex::new(false));
+    let mut simulation_thread = None;
 
     let mut previous_time = Local::now();
 
@@ -86,11 +96,69 @@ fn main() {
 
             egui_glium.run(&window, |egui_ctx| {
                 egui::Window::new("panel").show(egui_ctx, |ui| {
+                    if ui.button("Start").clicked() && simulation_thread.is_none() {
+                        let shared_rotation = shared_rotation.clone();
+                        let shared_run = shared_run.clone();
+                        *shared_run.lock().unwrap() = true;
+                        simulation_thread = Some(thread::spawn(move || {
+                            let mut previous_time = Local::now();
+                            let mut tick = TimeDelta::zero();
+                            let step = TimeDelta::milliseconds(10);
+                            let mut d = 0.0;
+                            let mut dd = 1.0;
+
+                            let mut run = shared_run.lock().unwrap().clone();
+
+                            while run {
+                                let current_time = Local::now();
+                                let duration = current_time - previous_time;
+                                tick += duration;
+                                previous_time = current_time;
+                                if tick <= step {
+                                    sleep(Duration::from_micros(
+                                        (step - tick).num_microseconds().unwrap_or(i64::MAX) as u64,
+                                    ));
+                                    tick = TimeDelta::zero();
+                                } else {
+                                    tick -= step;
+                                }
+
+                                let mut r = shared_rotation.lock().unwrap();
+                                let a = r.clone();
+                                let a = a.euler_angles();
+                                let a = (a.0 + d, a.1 + d, a.2 + d);
+
+                                *r = UnitQuaternion::from_euler_angles(a.0, a.1, a.2);
+
+                                d += dd * 0.0001;
+
+                                if d.abs() >= 1.0 {
+                                    d = dd;
+                                    dd *= -1.0;
+                                }
+
+                                run = shared_run.lock().unwrap().clone();
+                            }
+                        }));
+                    }
+
+                    if ui.button("Stop").clicked() && simulation_thread.is_some() {
+                        let mut run = shared_run.lock().unwrap();
+                        *run = false;
+                        drop(run);
+
+                        let st = simulation_thread.take();
+
+                        st.unwrap().join().unwrap();
+                    }
+
                     ui.label(format!("FPS: {:.1}", fps));
                 });
             });
 
             window.request_redraw();
+
+            cube.update_rotation(shared_rotation.lock().unwrap().clone());
 
             let mut target = display.draw();
 

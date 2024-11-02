@@ -20,4 +20,8 @@ impl Cube {
     pub fn get_scale_matrix(&self) -> Matrix4<f32> {
         Matrix4::new_scaling(self.size)
     }
+
+    pub fn update_rotation(&mut self, rotation: UnitQuaternion<f32>) {
+        self.rotation = rotation;
+    }
 }
