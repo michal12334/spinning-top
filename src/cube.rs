@@ -16,4 +16,8 @@ impl Cube {
             * self.base_rotation.to_rotation_matrix().to_homogeneous()
             * Matrix4::new_scaling(self.size)
     }
+
+    pub fn get_scale_matrix(&self) -> Matrix4<f32> {
+        Matrix4::new_scaling(self.size)
+    }
 }

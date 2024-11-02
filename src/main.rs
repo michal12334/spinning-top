@@ -1,11 +1,15 @@
 mod cube;
 mod cuber_drawer;
+mod diagonal_drawer;
 mod infinite_grid_drawer;
 mod vertex;
+
+use core::f32;
 
 use chrono::Local;
 use cube::CubeBuilder;
 use cuber_drawer::CubeDrawer;
+use diagonal_drawer::DiagonalDrawer;
 use egui::ViewportId;
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
@@ -59,12 +63,16 @@ fn main() {
 
     let cube = CubeBuilder::default()
         .size(1.0)
-        .base_rotation(UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0))
+        .base_rotation(
+            UnitQuaternion::from_euler_angles(-(2.0 / 3.0f32).sqrt().acos(), 0.0, 0.0)
+                * UnitQuaternion::from_euler_angles(0.0, 0.0, f32::consts::PI / 4.0),
+        )
         .rotation(UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0))
         .build()
         .unwrap();
 
     let cube_drawer = CubeDrawer::new(&display);
+    let diagonal_drawer = DiagonalDrawer::new(&display);
 
     let mut previous_time = Local::now();
 
@@ -89,6 +97,7 @@ fn main() {
             target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
             cube_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+            diagonal_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
             infinite_grid_drawer.draw(&mut target, &perspective, &view, &drawing_parameters);
 
             egui_glium.paint(&display, &mut target);
