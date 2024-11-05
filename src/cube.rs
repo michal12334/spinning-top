@@ -5,8 +5,11 @@ use nalgebra::{Matrix4, UnitQuaternion};
 
 #[derive(Debug, Clone, Getters, new, Builder)]
 pub struct Cube {
+    #[getter(copy)]
     size: f32,
+    #[getter(copy)]
     rotation: UnitQuaternion<f32>,
+    #[getter(copy)]
     base_rotation: UnitQuaternion<f32>,
 }
 
@@ -23,5 +26,9 @@ impl Cube {
 
     pub fn update_rotation(&mut self, rotation: UnitQuaternion<f32>) {
         self.rotation = rotation;
+    }
+
+    pub fn update_size(&mut self, size: f32) {
+        self.size = size;
     }
 }

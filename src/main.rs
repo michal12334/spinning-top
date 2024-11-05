@@ -16,7 +16,7 @@ use chrono::{Local, TimeDelta};
 use cube::CubeBuilder;
 use cuber_drawer::CubeDrawer;
 use diagonal_drawer::DiagonalDrawer;
-use egui::ViewportId;
+use egui::{DragValue, ViewportId, Widget};
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
 use nalgebra::{Matrix4, Point3, UnitQuaternion, Vector3, Vector4};
@@ -80,6 +80,12 @@ fn main() {
     let cube_drawer = CubeDrawer::new(&display);
     let diagonal_drawer = DiagonalDrawer::new(&display);
 
+    let mut cube_size = cube.size();
+    let mut cube_density = 1f32;
+    let mut cube_deviation = 0f32;
+    let mut angular_velocity = 15f32;
+    let mut integration_step = 0.001f32;
+
     let shared_rotation = Arc::new(Mutex::<UnitQuaternion<f32>>::new(UnitQuaternion::identity()));
     let shared_run = Arc::new(Mutex::new(false));
     let mut simulation_thread = None;
@@ -103,7 +109,7 @@ fn main() {
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
-                            let step = TimeDelta::milliseconds(10);
+                            let step = TimeDelta::milliseconds((integration_step * 1000.0) as i64);
                             let mut d = 0.0;
                             let mut dd = 1.0;
 
@@ -151,6 +157,58 @@ fn main() {
 
                         st.unwrap().join().unwrap();
                     }
+
+                    ui.horizontal(|ui| {
+                        if DragValue::new(&mut cube_size)
+                            .clamp_range(0.1..=10.0)
+                            .speed(0.1)
+                            .ui(ui)
+                            .changed()
+                            && simulation_thread.is_none()
+                        {
+                            cube.update_size(cube_size);
+                        }
+
+                        ui.label("cube size");
+                    });
+
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut cube_density)
+                            .clamp_range(0.01..=10.0)
+                            .speed(0.01)
+                            .ui(ui);
+
+                        ui.label("cube density");
+                    });
+
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut cube_deviation)
+                            .clamp_range(
+                                (-std::f32::consts::PI / 3.0)..=(std::f32::consts::PI / 3.0),
+                            )
+                            .speed(0.01)
+                            .ui(ui);
+
+                        ui.label("cube deviation");
+                    });
+
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut angular_velocity)
+                            .clamp_range(0.1..=std::f32::consts::PI)
+                            .speed(0.01)
+                            .ui(ui);
+
+                        ui.label("angular velocity");
+                    });
+
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut integration_step)
+                            .clamp_range(0.0001..=0.1)
+                            .speed(0.0001)
+                            .ui(ui);
+
+                        ui.label("integration step");
+                    });
 
                     ui.label(format!("FPS: {:.1}", fps));
                 });
