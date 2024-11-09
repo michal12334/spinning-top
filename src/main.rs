@@ -84,7 +84,7 @@ fn main() {
     let mut cube_size = cube.size();
     let mut cube_density = 1f32;
     let mut cube_deviation = 0f32;
-    let mut angular_velocity = 15f32;
+    let mut angular_velocity = 1f32;
     let mut integration_step = 0.001f32;
 
     let shared_rotation = Arc::new(Mutex::<UnitQuaternion<f32>>::new(UnitQuaternion::identity()));
@@ -108,6 +108,7 @@ fn main() {
                         let shared_run = shared_run.clone();
                         *shared_run.lock().unwrap() = true;
                         let moment_of_interia = cube.get_moment_of_interia();
+                        let weight = cube.get_weight();
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
@@ -118,7 +119,9 @@ fn main() {
                             let moment_of_interia = moment_of_interia;
                             let inversed_moment_of_interia =
                                 moment_of_interia.try_inverse().unwrap();
-                            let _center = Vector3::new(0f32, cube_size / 2.0, 0f32);
+                            let center = Vector3::new(0f32, cube_size / 2.0, 0f32);
+                            let weight = weight;
+                            let f = Vector3::new(0f32, -weight * 9.81, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
                             *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
                             let mut q_copy = q.clone();
@@ -140,18 +143,24 @@ fn main() {
                                     tick -= step;
                                 }
 
+                                let rotation_matrix = q_copy.to_rotation_matrix();
+                                let r = -(rotation_matrix * center);
+                                let n = f.cross(&r);
+
                                 let k1 = h
                                     * inversed_moment_of_interia
-                                    * ((moment_of_interia * w).cross(&w));
+                                    * (n + (moment_of_interia * w).cross(&w));
                                 let k2 = h
                                     * inversed_moment_of_interia
-                                    * ((moment_of_interia * (w + k1 / 2.0)).cross(&(w + k1 / 2.0)));
+                                    * (n + (moment_of_interia * (w + k1 / 2.0))
+                                        .cross(&(w + k1 / 2.0)));
                                 let k3 = h
                                     * inversed_moment_of_interia
-                                    * ((moment_of_interia * (w + k2 / 2.0)).cross(&(w + k2 / 2.0)));
+                                    * (n + (moment_of_interia * (w + k2 / 2.0))
+                                        .cross(&(w + k2 / 2.0)));
                                 let k4 = h
                                     * inversed_moment_of_interia
-                                    * ((moment_of_interia * (w + k3)).cross(&(w + k3)));
+                                    * (n + (moment_of_interia * (w + k3)).cross(&(w + k3)));
                                 let dw = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
                                 w += dw;
 
@@ -233,7 +242,7 @@ fn main() {
 
                     ui.horizontal(|ui| {
                         DragValue::new(&mut angular_velocity)
-                            .clamp_range(0.1..=std::f32::consts::PI)
+                            .clamp_range(0.0..=60.0)
                             .speed(0.01)
                             .ui(ui);
 

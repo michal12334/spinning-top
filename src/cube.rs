@@ -31,8 +31,12 @@ impl Cube {
         self.rotation.to_rotation_matrix().to_homogeneous() * Matrix4::new_scaling(self.size)
     }
 
+    pub fn get_weight(&self) -> f32 {
+        self.density * self.size * self.size * self.size
+    }
+
     pub fn get_moment_of_interia(&self) -> Matrix3<f32> {
-        let weight = self.density * self.size;
+        let weight = self.get_weight();
 
         Matrix3::new(
             weight * self.size * self.size / 6.0,
