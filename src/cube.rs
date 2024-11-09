@@ -1,12 +1,14 @@
 use derive_builder::Builder;
 use derive_getters::Getters;
 use derive_new::new;
-use nalgebra::{Matrix4, UnitQuaternion};
+use nalgebra::{Matrix3, Matrix4, UnitQuaternion};
 
 #[derive(Debug, Clone, Getters, new, Builder)]
 pub struct Cube {
     #[getter(copy)]
     size: f32,
+    #[getter(copy)]
+    weight: f32,
     #[getter(copy)]
     rotation: UnitQuaternion<f32>,
     #[getter(copy)]
@@ -30,5 +32,12 @@ impl Cube {
 
     pub fn update_size(&mut self, size: f32) {
         self.size = size;
+    }
+
+    pub fn get_moment_of_interia(&self) -> Matrix3<f32> {
+        Matrix3::new(
+            5.0 * self.weight * self.size * self.size / 12.0, self.weight * self.size * self.size / 4.0, self.weight * self.size * self.size / 4.0,
+            self.weight * self.size * self.size / 4.0, 5.0 * self.weight * self.size * self.size / 12.0, self.weight * self.size * self.size / 4.0,
+            self.weight * self.size * self.size / 4.0, self.weight * self.size * self.size / 4.0, 5.0 * self.weight * self.size * self.size / 12.0)
     }
 }

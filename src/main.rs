@@ -19,7 +19,7 @@ use diagonal_drawer::DiagonalDrawer;
 use egui::{DragValue, ViewportId, Widget};
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
-use nalgebra::{Matrix4, Point3, UnitQuaternion, Vector3, Vector4};
+use nalgebra::{Matrix4, Point3, Quaternion, UnitQuaternion, Vector3, Vector4};
 use winit::event::{self, ElementState, MouseButton};
 
 fn main() {
@@ -69,6 +69,7 @@ fn main() {
 
     let mut cube = CubeBuilder::default()
         .size(1.0)
+        .weight(1.0)
         .base_rotation(
             UnitQuaternion::from_euler_angles(-(2.0 / 3.0f32).sqrt().acos(), 0.0, 0.0)
                 * UnitQuaternion::from_euler_angles(0.0, 0.0, f32::consts::PI / 4.0),
@@ -106,12 +107,20 @@ fn main() {
                         let shared_rotation = shared_rotation.clone();
                         let shared_run = shared_run.clone();
                         *shared_run.lock().unwrap() = true;
+                        let moment_of_interia = cube.get_moment_of_interia();
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
-                            let step = TimeDelta::milliseconds((integration_step * 1000.0) as i64);
-                            let mut d = 0.0;
-                            let mut dd = 1.0;
+                            let step = TimeDelta::microseconds((integration_step * 1_000_000.0) as i64);
+                            let h = integration_step;
+                            let mut w = Vector3::new(0f32, angular_velocity, 0f32);
+                            let moment_of_interia = moment_of_interia;
+                            let inversed_moment_of_interia = moment_of_interia.try_inverse().unwrap();
+                            let _center = Vector3::new(0f32, cube_size / 2.0, 0f32);
+                            let mut q = shared_rotation.lock().unwrap();
+                            *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
+                            let mut q_copy = q.clone();
+                            drop(q);
 
                             let mut run = shared_run.lock().unwrap().clone();
 
@@ -129,19 +138,28 @@ fn main() {
                                     tick -= step;
                                 }
 
-                                let mut r = shared_rotation.lock().unwrap();
-                                let a = r.clone();
-                                let a = a.euler_angles();
-                                let a = (a.0 + d, a.1 + d, a.2 + d);
+                                let k1 = h * inversed_moment_of_interia * ((moment_of_interia * w).cross(&w));
+                                let k2 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k1 / 2.0)).cross(&(w + k1 / 2.0)));
+                                let k3 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k2 / 2.0)).cross(&(w + k2 / 2.0)));
+                                let k4 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k3)).cross(&(w + k3)));
+                                let dw = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+                                w += dw;
 
-                                *r = UnitQuaternion::from_euler_angles(a.0, a.1, a.2);
+                                let wq = Quaternion::new(0.0, w.x, w.y, w.z);
+                                let mut q = q_copy.quaternion().clone();
 
-                                d += dd * 0.0001;
+                                let k1 = h * q * wq / 2.0;
+                                let k2 = h * (q + k1 / 2.0) * wq / 2.0;
+                                let k3 = h * (q + k2 / 2.0) * wq / 2.0;
+                                let k4 = h * (q + k3) * wq / 2.0;
+                                let dq = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+                                q += dq;
 
-                                if d.abs() >= 1.0 {
-                                    d = dd;
-                                    dd *= -1.0;
-                                }
+                                q_copy = UnitQuaternion::from_quaternion(q);
+
+                                let mut q = shared_rotation.lock().unwrap();
+                                *q = q_copy.clone();
+                                drop(q);
 
                                 run = shared_run.lock().unwrap().clone();
                             }
