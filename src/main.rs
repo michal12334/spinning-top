@@ -111,11 +111,13 @@ fn main() {
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
-                            let step = TimeDelta::microseconds((integration_step * 1_000_000.0) as i64);
+                            let step =
+                                TimeDelta::microseconds((integration_step * 1_000_000.0) as i64);
                             let h = integration_step;
                             let mut w = Vector3::new(0f32, angular_velocity, 0f32);
                             let moment_of_interia = moment_of_interia;
-                            let inversed_moment_of_interia = moment_of_interia.try_inverse().unwrap();
+                            let inversed_moment_of_interia =
+                                moment_of_interia.try_inverse().unwrap();
                             let _center = Vector3::new(0f32, cube_size / 2.0, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
                             *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
@@ -138,10 +140,18 @@ fn main() {
                                     tick -= step;
                                 }
 
-                                let k1 = h * inversed_moment_of_interia * ((moment_of_interia * w).cross(&w));
-                                let k2 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k1 / 2.0)).cross(&(w + k1 / 2.0)));
-                                let k3 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k2 / 2.0)).cross(&(w + k2 / 2.0)));
-                                let k4 = h * inversed_moment_of_interia * ((moment_of_interia * (w + k3)).cross(&(w + k3)));
+                                let k1 = h
+                                    * inversed_moment_of_interia
+                                    * ((moment_of_interia * w).cross(&w));
+                                let k2 = h
+                                    * inversed_moment_of_interia
+                                    * ((moment_of_interia * (w + k1 / 2.0)).cross(&(w + k1 / 2.0)));
+                                let k3 = h
+                                    * inversed_moment_of_interia
+                                    * ((moment_of_interia * (w + k2 / 2.0)).cross(&(w + k2 / 2.0)));
+                                let k4 = h
+                                    * inversed_moment_of_interia
+                                    * ((moment_of_interia * (w + k3)).cross(&(w + k3)));
                                 let dw = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
                                 w += dw;
 

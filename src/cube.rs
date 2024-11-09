@@ -36,8 +36,15 @@ impl Cube {
 
     pub fn get_moment_of_interia(&self) -> Matrix3<f32> {
         Matrix3::new(
-            5.0 * self.weight * self.size * self.size / 12.0, self.weight * self.size * self.size / 4.0, self.weight * self.size * self.size / 4.0,
-            self.weight * self.size * self.size / 4.0, 5.0 * self.weight * self.size * self.size / 12.0, self.weight * self.size * self.size / 4.0,
-            self.weight * self.size * self.size / 4.0, self.weight * self.size * self.size / 4.0, 5.0 * self.weight * self.size * self.size / 12.0)
+            self.weight * self.size * self.size / 6.0,
+            0.0,
+            0.0,
+            0.0,
+            5.0 * self.weight * self.size * self.size / 12.0,
+            0.0,
+            0.0,
+            0.0,
+            self.weight * self.size * self.size / 6.0,
+        )
     }
 }
