@@ -69,7 +69,7 @@ fn main() {
 
     let mut cube = CubeBuilder::default()
         .size(1.0)
-        .weight(1.0)
+        .density(1.0)
         .base_rotation(
             UnitQuaternion::from_euler_angles(-(2.0 / 3.0f32).sqrt().acos(), 0.0, 0.0)
                 * UnitQuaternion::from_euler_angles(0.0, 0.0, f32::consts::PI / 4.0),
@@ -194,28 +194,39 @@ fn main() {
                             .changed()
                             && simulation_thread.is_none()
                         {
-                            cube.update_size(cube_size);
+                            cube.set_size(cube_size);
                         }
 
                         ui.label("cube size");
                     });
 
                     ui.horizontal(|ui| {
-                        DragValue::new(&mut cube_density)
+                        if DragValue::new(&mut cube_density)
                             .clamp_range(0.01..=10.0)
                             .speed(0.01)
-                            .ui(ui);
+                            .ui(ui)
+                            .changed()
+                            && simulation_thread.is_none()
+                        {
+                            cube.set_density(cube_density);
+                        }
 
                         ui.label("cube density");
                     });
 
                     ui.horizontal(|ui| {
-                        DragValue::new(&mut cube_deviation)
+                        if DragValue::new(&mut cube_deviation)
                             .clamp_range(
                                 (-std::f32::consts::PI / 3.0)..=(std::f32::consts::PI / 3.0),
                             )
                             .speed(0.01)
-                            .ui(ui);
+                            .ui(ui)
+                            .changed()
+                            && simulation_thread.is_none()
+                        {
+                            let mut q = shared_rotation.lock().unwrap();
+                            *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
+                        }
 
                         ui.label("cube deviation");
                     });
@@ -244,7 +255,7 @@ fn main() {
 
             window.request_redraw();
 
-            cube.update_rotation(shared_rotation.lock().unwrap().clone());
+            cube.set_rotation(shared_rotation.lock().unwrap().clone());
 
             let mut target = display.draw();
 

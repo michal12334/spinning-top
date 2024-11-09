@@ -1,15 +1,20 @@
 use derive_builder::Builder;
 use derive_getters::Getters;
 use derive_new::new;
+use derive_setters::Setters;
 use nalgebra::{Matrix3, Matrix4, UnitQuaternion};
 
-#[derive(Debug, Clone, Getters, new, Builder)]
+#[derive(Debug, Clone, Getters, Setters, new, Builder)]
+#[setters(generate = false, prefix = "set_", borrow_self)]
 pub struct Cube {
     #[getter(copy)]
+    #[setters(generate)]
     size: f32,
     #[getter(copy)]
-    weight: f32,
+    #[setters(generate)]
+    density: f32,
     #[getter(copy)]
+    #[setters(generate)]
     rotation: UnitQuaternion<f32>,
     #[getter(copy)]
     base_rotation: UnitQuaternion<f32>,
@@ -26,25 +31,19 @@ impl Cube {
         self.rotation.to_rotation_matrix().to_homogeneous() * Matrix4::new_scaling(self.size)
     }
 
-    pub fn update_rotation(&mut self, rotation: UnitQuaternion<f32>) {
-        self.rotation = rotation;
-    }
-
-    pub fn update_size(&mut self, size: f32) {
-        self.size = size;
-    }
-
     pub fn get_moment_of_interia(&self) -> Matrix3<f32> {
+        let weight = self.density * self.size;
+
         Matrix3::new(
-            self.weight * self.size * self.size / 6.0,
+            weight * self.size * self.size / 6.0,
             0.0,
             0.0,
             0.0,
-            5.0 * self.weight * self.size * self.size / 12.0,
+            5.0 * weight * self.size * self.size / 12.0,
             0.0,
             0.0,
             0.0,
-            self.weight * self.size * self.size / 6.0,
+            weight * self.size * self.size / 6.0,
         )
     }
 }
