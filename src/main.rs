@@ -130,8 +130,8 @@ fn main() {
                             let moment_of_interia = moment_of_interia;
                             let inversed_moment_of_interia =
                                 moment_of_interia.try_inverse().unwrap();
-                            let center = Vector3::new(0f32, cube_size / 2.0, 0f32);
-                            let top = Vector3::new(0f32, cube_size, 0f32);
+                            let top = Vector3::new(0f32, cube_size * 3f32.sqrt(), 0f32);
+                            let center = top / 2.0;
                             let weight = weight;
                             let f = Vector3::new(0f32, -weight * 9.81, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
