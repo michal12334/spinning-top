@@ -134,7 +134,7 @@ fn main() {
                             let top = Vector3::new(0f32, cube_size * 3f32.sqrt(), 0f32);
                             let center = top / 2.0;
                             let weight = weight;
-                            let f = Vector3::new(0f32, -weight, 0f32);
+                            let f = Vector3::new(0f32, -weight * 9.81, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
                             *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
                             let mut q_copy = q.clone();
@@ -157,35 +157,71 @@ fn main() {
                                 }
 
                                 let rotation_matrix = q_copy.to_rotation_matrix();
-                                let r = -(rotation_matrix * center);
-                                let n = f.cross(&r);
                                 trajectory_queue.push(rotation_matrix * top).unwrap();
 
-                                let k1 = h
-                                    * inversed_moment_of_interia
-                                    * (n + (moment_of_interia * w).cross(&w));
-                                let k2 = h
-                                    * inversed_moment_of_interia
-                                    * (n + (moment_of_interia * (w + k1 / 2.0))
-                                        .cross(&(w + k1 / 2.0)));
-                                let k3 = h
-                                    * inversed_moment_of_interia
-                                    * (n + (moment_of_interia * (w + k2 / 2.0))
-                                        .cross(&(w + k2 / 2.0)));
-                                let k4 = h
-                                    * inversed_moment_of_interia
-                                    * (n + (moment_of_interia * (w + k3)).cross(&(w + k3)));
-                                let dw = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
-                                w += dw;
-
-                                let wq = Quaternion::new(0.0, w.x, w.y, w.z);
                                 let mut q = q_copy.quaternion().clone();
 
-                                let k1 = h * q * wq / 2.0;
-                                let k2 = h * (q + k1 / 2.0) * wq / 2.0;
-                                let k3 = h * (q + k2 / 2.0) * wq / 2.0;
-                                let k4 = h * (q + k3) * wq / 2.0;
-                                let dq = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+                                let k1_w = h
+                                    * inversed_moment_of_interia
+                                    * (f.cross(
+                                        &(-(UnitQuaternion::from_quaternion(q)
+                                            .to_rotation_matrix()
+                                            * center)),
+                                    ) + (moment_of_interia * w).cross(&w));
+
+                                let wq = Quaternion::new(0.0, w.x, w.y, w.z);
+                                let k1_q = h * q * wq / 2.0;
+
+                                let k2_w = h
+                                    * inversed_moment_of_interia
+                                    * (f.cross(
+                                        &(-(UnitQuaternion::from_quaternion(q + k1_q / 2.0)
+                                            .to_rotation_matrix()
+                                            * center)),
+                                    ) + (moment_of_interia * (w + k1_w / 2.0))
+                                        .cross(&(w + k1_w / 2.0)));
+
+                                let wq = Quaternion::new(
+                                    0.0,
+                                    (w + k1_w / 2.0).x,
+                                    (w + k1_w / 2.0).y,
+                                    (w + k1_w / 2.0).z,
+                                );
+                                let k2_q = h * (q + k1_q / 2.0) * wq / 2.0;
+
+                                let k3_w = h
+                                    * inversed_moment_of_interia
+                                    * (f.cross(
+                                        &(-(UnitQuaternion::from_quaternion(q + k2_q / 2.0)
+                                            .to_rotation_matrix()
+                                            * center)),
+                                    ) + (moment_of_interia * (w + k2_w / 2.0))
+                                        .cross(&(w + k2_w / 2.0)));
+
+                                let wq = Quaternion::new(
+                                    0.0,
+                                    (w + k2_w / 2.0).x,
+                                    (w + k2_w / 2.0).y,
+                                    (w + k2_w / 2.0).z,
+                                );
+                                let k3_q = h * (q + k2_q / 2.0) * wq / 2.0;
+
+                                let k4_w = h
+                                    * inversed_moment_of_interia
+                                    * (f.cross(
+                                        &(-(UnitQuaternion::from_quaternion(q + k3_q)
+                                            .to_rotation_matrix()
+                                            * center)),
+                                    ) + (moment_of_interia * (w + k3_w)).cross(&(w + k3_w)));
+
+                                let wq =
+                                    Quaternion::new(0.0, (w + k3_w).x, (w + k3_w).y, (w + k3_w).z);
+                                let k4_q = h * (q + k3_q) * wq / 2.0;
+
+                                let dw = (k1_w + 2.0 * k2_w + 2.0 * k3_w + k4_w) / 6.0;
+                                w += dw;
+
+                                let dq = (k1_q + 2.0 * k2_q + 2.0 * k3_q + k4_q) / 6.0;
                                 q += dq;
 
                                 q_copy = UnitQuaternion::from_quaternion(q);
