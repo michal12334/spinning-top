@@ -96,7 +96,7 @@ fn main() {
     let shared_run = Arc::new(Mutex::new(false));
     let mut simulation_thread = None;
 
-    let trajectory_size = 5000;
+    let trajectory_size = 500000;
     let trajectory_queue = Arc::new(ConcurrentQueue::<Vector3<f32>>::unbounded());
     let mut trajectory = Trajectory::new(trajectory_size, &display);
     let trajectory_drawer = TrajectoryDrawer::new(&display);
