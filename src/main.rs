@@ -120,6 +120,7 @@ fn main() {
                         let moment_of_interia = cube.get_moment_of_interia();
                         let weight = cube.get_weight();
                         let trajectory_queue = trajectory_queue.clone();
+                        trajectory.clear();
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
