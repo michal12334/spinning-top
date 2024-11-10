@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use derive_getters::Getters;
 use derive_new::new;
 use derive_setters::Setters;
-use nalgebra::{Matrix3, Matrix4, UnitQuaternion};
+use nalgebra::{Matrix3, Matrix4, UnitQuaternion, Vector3};
 
 #[derive(Debug, Clone, Getters, Setters, new, Builder)]
 #[setters(generate = false, prefix = "set_", borrow_self)]
@@ -38,16 +38,26 @@ impl Cube {
     pub fn get_moment_of_interia(&self) -> Matrix3<f32> {
         let weight = self.get_weight();
 
-        Matrix3::new(
-            weight * self.size * self.size / 6.0,
+        let base_i = weight * self.size * self.size / 6.0;
+
+        let mx = self.base_rotation.to_rotation_matrix().inverse() * Vector3::x();
+        let my = self.base_rotation.to_rotation_matrix().inverse() * Vector3::y();
+        let mz = self.base_rotation.to_rotation_matrix().inverse() * Vector3::z();
+
+        Matrix3::from_diagonal(&Vector3::new(
+            base_i * mx.dot(&mx),
+            base_i * my.dot(&my),
+            base_i * mz.dot(&mz),
+        )) + Matrix3::new(
+            3.0 * weight * self.size * self.size / 4.0,
             0.0,
             0.0,
             0.0,
-            5.0 * weight * self.size * self.size / 12.0,
             0.0,
             0.0,
             0.0,
-            weight * self.size * self.size / 6.0,
+            0.0,
+            3.0 * weight * self.size * self.size / 4.0,
         )
     }
 }

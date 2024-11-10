@@ -133,7 +133,7 @@ fn main() {
                             let top = Vector3::new(0f32, cube_size * 3f32.sqrt(), 0f32);
                             let center = top / 2.0;
                             let weight = weight;
-                            let f = Vector3::new(0f32, -weight * 9.81, 0f32);
+                            let f = Vector3::new(0f32, -weight, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
                             *q = UnitQuaternion::from_euler_angles(cube_deviation, 0f32, 0f32);
                             let mut q_copy = q.clone();
