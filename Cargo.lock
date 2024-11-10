@@ -1902,6 +1902,7 @@ name = "spinning_top"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "concurrent-queue",
  "derive-getters",
  "derive-new",
  "derive_builder",

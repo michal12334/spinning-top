@@ -2,6 +2,8 @@ mod cube;
 mod cuber_drawer;
 mod diagonal_drawer;
 mod infinite_grid_drawer;
+mod trajectory;
+mod trajectory_drawer;
 mod vertex;
 
 use core::f32;
@@ -13,6 +15,7 @@ use std::{
 };
 
 use chrono::{Local, TimeDelta};
+use concurrent_queue::ConcurrentQueue;
 use cube::CubeBuilder;
 use cuber_drawer::CubeDrawer;
 use diagonal_drawer::DiagonalDrawer;
@@ -20,6 +23,8 @@ use egui::{DragValue, ViewportId, Widget};
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
 use nalgebra::{Matrix4, Point3, Quaternion, UnitQuaternion, Vector3, Vector4};
+use trajectory::Trajectory;
+use trajectory_drawer::TrajectoryDrawer;
 use winit::event::{self, ElementState, MouseButton};
 
 fn main() {
@@ -91,6 +96,11 @@ fn main() {
     let shared_run = Arc::new(Mutex::new(false));
     let mut simulation_thread = None;
 
+    let trajectory_size = 5000;
+    let trajectory_queue = Arc::new(ConcurrentQueue::<Vector3<f32>>::unbounded());
+    let mut trajectory = Trajectory::new(trajectory_size, &display);
+    let trajectory_drawer = TrajectoryDrawer::new(&display);
+
     let mut previous_time = Local::now();
 
     let _ = event_loop.run(move |event, window_target| {
@@ -109,6 +119,7 @@ fn main() {
                         *shared_run.lock().unwrap() = true;
                         let moment_of_interia = cube.get_moment_of_interia();
                         let weight = cube.get_weight();
+                        let trajectory_queue = trajectory_queue.clone();
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
                             let mut tick = TimeDelta::zero();
@@ -120,6 +131,7 @@ fn main() {
                             let inversed_moment_of_interia =
                                 moment_of_interia.try_inverse().unwrap();
                             let center = Vector3::new(0f32, cube_size / 2.0, 0f32);
+                            let top = Vector3::new(0f32, cube_size, 0f32);
                             let weight = weight;
                             let f = Vector3::new(0f32, -weight * 9.81, 0f32);
                             let mut q = shared_rotation.lock().unwrap();
@@ -146,6 +158,7 @@ fn main() {
                                 let rotation_matrix = q_copy.to_rotation_matrix();
                                 let r = -(rotation_matrix * center);
                                 let n = f.cross(&r);
+                                trajectory_queue.push(rotation_matrix * top).unwrap();
 
                                 let k1 = h
                                     * inversed_moment_of_interia
@@ -266,12 +279,25 @@ fn main() {
 
             cube.set_rotation(shared_rotation.lock().unwrap().clone());
 
+            trajectory.add_points(trajectory_queue.clone());
+
             let mut target = display.draw();
 
             target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
             cube_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
             diagonal_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+
+            if !trajectory.points().is_empty() {
+                trajectory_drawer.draw(
+                    &mut target,
+                    &perspective,
+                    &view,
+                    &trajectory,
+                    &drawing_parameters,
+                );
+            }
+
             infinite_grid_drawer.draw(&mut target, &perspective, &view, &drawing_parameters);
 
             egui_glium.paint(&display, &mut target);
