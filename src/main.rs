@@ -296,9 +296,7 @@ fn main() {
 
                     ui.horizontal(|ui| {
                         if DragValue::new(&mut cube_deviation)
-                            .clamp_range(
-                                (-std::f32::consts::PI / 3.0)..=(std::f32::consts::PI / 3.0),
-                            )
+                            .clamp_range((-std::f32::consts::PI)..=(std::f32::consts::PI))
                             .speed(0.01)
                             .ui(ui)
                             .changed()
