@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::LinkedList, sync::Arc};
 
 use concurrent_queue::ConcurrentQueue;
 use derive_getters::Getters;
@@ -9,7 +9,7 @@ use crate::vertex::Vertex;
 
 #[derive(Getters)]
 pub struct Trajectory {
-    points: Vec<Vertex>,
+    points: LinkedList<Vertex>,
     buffer: VertexBuffer<Vertex>,
     size: usize,
 }
@@ -20,7 +20,7 @@ impl Trajectory {
         Self {
             buffer,
             size,
-            points: Vec::new(),
+            points: LinkedList::new(),
         }
     }
 
@@ -29,15 +29,15 @@ impl Trajectory {
             let point = points_qeue.pop().unwrap();
             let point = Vertex::new([point.x, point.y, point.z]);
             if self.points.len() < self.size {
-                self.points.push(point);
+                self.points.push_back(point);
             } else {
-                self.points.remove(0);
-                self.points.push(point);
+                self.points.pop_front();
+                self.points.push_back(point);
             }
         }
 
         if !self.points.is_empty() {
-            let last_point = self.points.last().unwrap();
+            let last_point = self.points.back().unwrap();
             self.buffer.write(
                 &self
                     .points
@@ -56,7 +56,7 @@ impl Trajectory {
     pub fn resize(&mut self, size: usize, display: &Display<WindowSurface>) {
         self.size = size;
         while self.points.len() > size {
-            self.points.remove(0);
+            self.points.pop_front();
         }
         self.buffer = VertexBuffer::empty_dynamic(display, size).unwrap();
     }
