@@ -31,6 +31,12 @@ impl Cube {
         self.rotation.to_rotation_matrix().to_homogeneous() * Matrix4::new_scaling(self.size)
     }
 
+    pub fn get_gravity_vector_model_matrix(&self) -> Matrix4<f32> {
+        let center = Vector3::new(0f32, self.size * 3f32.sqrt() / 2f32, 0f32);
+        let rotated_center = self.rotation.to_rotation_matrix() * center;
+        Matrix4::new_translation(&rotated_center)
+    }
+
     pub fn get_weight(&self) -> f32 {
         self.density * self.size * self.size * self.size
     }

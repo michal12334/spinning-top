@@ -1,6 +1,7 @@
 mod cube;
 mod cuber_drawer;
 mod diagonal_drawer;
+mod gravity_vector_drawer;
 mod infinite_grid_drawer;
 mod trajectory;
 mod trajectory_drawer;
@@ -21,6 +22,7 @@ use cuber_drawer::CubeDrawer;
 use diagonal_drawer::DiagonalDrawer;
 use egui::{DragValue, Slider, ViewportId, Widget};
 use glium::{Blend, Surface};
+use gravity_vector_drawer::GravityVectorDrawer;
 use infinite_grid_drawer::InfiniteGridDrawer;
 use nalgebra::{Matrix4, Point3, Quaternion, UnitQuaternion, Vector3, Vector4};
 use trajectory::Trajectory;
@@ -85,6 +87,7 @@ fn main() {
 
     let cube_drawer = CubeDrawer::new(&display);
     let diagonal_drawer = DiagonalDrawer::new(&display);
+    let gravity_vector_drawer = GravityVectorDrawer::new(&display);
 
     let mut cube_size = cube.size();
     let mut cube_density = 1f32;
@@ -363,6 +366,16 @@ fn main() {
 
             if draw_diagonal {
                 diagonal_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+            }
+
+            if draw_gravity_vector {
+                gravity_vector_drawer.draw(
+                    &mut target,
+                    &perspective,
+                    &view,
+                    &cube,
+                    &drawing_parameters,
+                );
             }
 
             if !trajectory.points().is_empty() && draw_trajectory {
