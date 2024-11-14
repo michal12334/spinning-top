@@ -19,7 +19,7 @@ use concurrent_queue::ConcurrentQueue;
 use cube::CubeBuilder;
 use cuber_drawer::CubeDrawer;
 use diagonal_drawer::DiagonalDrawer;
-use egui::{DragValue, ViewportId, Widget};
+use egui::{DragValue, Slider, ViewportId, Widget};
 use glium::{Blend, Surface};
 use infinite_grid_drawer::InfiniteGridDrawer;
 use nalgebra::{Matrix4, Point3, Quaternion, UnitQuaternion, Vector3, Vector4};
@@ -96,7 +96,7 @@ fn main() {
     let shared_run = Arc::new(Mutex::new(false));
     let mut simulation_thread = None;
 
-    let trajectory_size = 500000;
+    let mut trajectory_size = 500000;
     let trajectory_queue = Arc::new(ConcurrentQueue::<Vector3<f32>>::unbounded());
     let mut trajectory = Trajectory::new(trajectory_size, &display);
     let trajectory_drawer = TrajectoryDrawer::new(&display);
@@ -317,6 +317,13 @@ fn main() {
                     ui.checkbox(&mut draw_diagonal, "draw diagonal");
                     ui.checkbox(&mut draw_trajectory, "draw trajectory");
                     ui.checkbox(&mut draw_gravity_vector, "draw gravity vector");
+
+                    if Slider::new(&mut trajectory_size, 10..=1_000_000)
+                        .ui(ui)
+                        .changed()
+                    {
+                        trajectory.resize(trajectory_size, &display);
+                    }
 
                     ui.label(format!("FPS: {:.1}", fps));
                 });

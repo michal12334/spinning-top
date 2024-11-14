@@ -52,4 +52,12 @@ impl Trajectory {
     pub fn clear(&mut self) {
         self.points.clear();
     }
+
+    pub fn resize(&mut self, size: usize, display: &Display<WindowSurface>) {
+        self.size = size;
+        while self.points.len() > size {
+            self.points.remove(0);
+        }
+        self.buffer = VertexBuffer::empty_dynamic(display, size).unwrap();
+    }
 }
