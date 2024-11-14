@@ -264,6 +264,9 @@ fn main() {
                         let st = simulation_thread.take();
 
                         st.unwrap().join().unwrap();
+
+                        cube.set_size(cube_size);
+                        cube.set_density(cube_density);
                     }
 
                     ui.horizontal(|ui| {
