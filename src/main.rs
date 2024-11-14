@@ -101,6 +101,11 @@ fn main() {
     let mut trajectory = Trajectory::new(trajectory_size, &display);
     let trajectory_drawer = TrajectoryDrawer::new(&display);
 
+    let mut draw_cube = true;
+    let mut draw_diagonal = true;
+    let mut draw_trajectory = true;
+    let mut draw_gravity_vector = true;
+
     let mut previous_time = Local::now();
 
     let _ = event_loop.run(move |event, window_target| {
@@ -308,6 +313,11 @@ fn main() {
                         ui.label("integration step");
                     });
 
+                    ui.checkbox(&mut draw_cube, "draw cube");
+                    ui.checkbox(&mut draw_diagonal, "draw diagonal");
+                    ui.checkbox(&mut draw_trajectory, "draw trajectory");
+                    ui.checkbox(&mut draw_gravity_vector, "draw gravity vector");
+
                     ui.label(format!("FPS: {:.1}", fps));
                 });
             });
@@ -322,10 +332,15 @@ fn main() {
 
             target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
-            cube_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
-            diagonal_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+            if draw_cube {
+                cube_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+            }
 
-            if !trajectory.points().is_empty() {
+            if draw_diagonal {
+                diagonal_drawer.draw(&mut target, &perspective, &view, &cube, &drawing_parameters);
+            }
+
+            if !trajectory.points().is_empty() && draw_trajectory {
                 trajectory_drawer.draw(
                     &mut target,
                     &perspective,
