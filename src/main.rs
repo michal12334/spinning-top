@@ -106,6 +106,9 @@ fn main() {
     let mut draw_trajectory = true;
     let mut draw_gravity_vector = true;
 
+    let mut gravity = true;
+    let shared_gravity = Arc::new(Mutex::new(true));
+
     let mut previous_time = Local::now();
 
     let _ = event_loop.run(move |event, window_target| {
@@ -125,6 +128,7 @@ fn main() {
                         let moment_of_interia = cube.get_moment_of_interia();
                         let weight = cube.get_weight();
                         let trajectory_queue = trajectory_queue.clone();
+                        let shared_gravity = shared_gravity.clone();
                         trajectory.clear();
                         simulation_thread = Some(thread::spawn(move || {
                             let mut previous_time = Local::now();
@@ -163,6 +167,15 @@ fn main() {
 
                                 let rotation_matrix = q_copy.to_rotation_matrix();
                                 trajectory_queue.push(rotation_matrix * top).unwrap();
+
+                                let f = {
+                                    let g = shared_gravity.lock().unwrap();
+                                    if *g {
+                                        f
+                                    } else {
+                                        Vector3::zeros()
+                                    }
+                                };
 
                                 let mut q = q_copy.quaternion().clone();
 
@@ -323,6 +336,11 @@ fn main() {
                         .changed()
                     {
                         trajectory.resize(trajectory_size, &display);
+                    }
+
+                    if ui.checkbox(&mut gravity, "gravity").changed() {
+                        let mut g = shared_gravity.lock().unwrap();
+                        *g = gravity;
                     }
 
                     ui.label(format!("FPS: {:.1}", fps));
